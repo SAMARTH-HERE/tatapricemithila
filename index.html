@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tata Tiscon — Profit Calculator (Revamp)</title>
+  <style>
+    /* Reset & base */
+    :root{
+      --bg:#f7fafc; --card:#ffffff; --muted:#6b7280; --accent:#0ea5a4; --accent-2:#0284c7; --danger:#ef4444; --glass: rgba(2,6,23,0.04);
+      --radius:14px; --shadow: 0 10px 30px rgba(2,6,23,0.06);
+      --maxw:980px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;background:linear-gradient(180deg,var(--bg),#ffffff);color:#0f172a}
+    a{color:inherit}
+
+    /* Layout */
+    .wrap{max-width:var(--maxw);margin:18px auto;padding:16px}
+    header{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;box-shadow:var(--shadow)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    /* Grid */
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
+    @media (max-width:880px){.grid{grid-template-columns:1fr}}
+
+    /* Card */
+    .card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border:1px solid rgba(2,6,23,0.04)}
+
+    /* Inputs table */
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+    thead th{font-weight:600;font-size:12px;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid #f1f5f9}
+    tbody td{padding:10px;border-bottom:1px solid #fbfcfe;vertical-align:middle}
+    tbody tr:hover td{background:linear-gradient(90deg, rgba(14,165,164,0.02), transparent)}
+    input[type=number]{width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef6;font-size:14px}
+    input[type=number]:focus{outline:0;box-shadow:0 8px 20px rgba(2,6,23,0.06);border-color:rgba(2,132,199,0.2)}
+
+    /* Buttons */
+    .row-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+    .btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;padding:10px 14px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid #e6eef6;color:var(--muted);font-weight:600}
+    .btn:active{transform:translateY(1px)}
+
+    /* Summary */
+    .summary{display:flex;flex-direction:column;gap:12px}
+    .stat{background:linear-gradient(180deg,#fff,#fbfdff);padding:12px;border-radius:12px;border:1px solid #eef6f9}
+    .stat .k{font-size:13px;color:var(--muted)}
+    .stat .v{font-weight:800;font-size:18px;margin-top:6px}
+
+    /* Mobile sticky footer */
+    @media (max-width:880px){
+      .mobile-footer{position:fixed;left:0;right:0;bottom:12px;padding:12px;display:flex;gap:8px;justify-content:center;pointer-events:auto}
+      .mobile-footer .btn{flex:1}
+      .wrap{padding-bottom:96px}
+    }
+
+    /* Results table */
+    .results{margin-top:12px}
+    .muted{color:var(--muted)}
+
+    /* small helpers */
+    .badge{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;padding:6px 10px;border-radius:999px;font-weight:700}
+    .small{font-size:12px;color:var(--muted)}
+
+    /* subtle animation */
+    .fade-up{animation:fadeUp .45s ease both}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">TIS</div>
+      <div>
+        <h1>Tata Tiscon — Profit Calculator</h1>
+        
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <div class="small">GST</div>
+        <div class="badge">18%</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card fade-up" aria-labelledby="calcTitle">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div id="calcTitle" style="font-weight:700">Calculator</div>
+            <div class="small muted">Edit values below and press Calculate</div>
+          </div>
+          <div style="min-width:120px">
+            <label class="small">GST %</label>
+            <input id="taxRate" type="number" value="18" min="0" step="0.01" />
+          </div>
+        </div>
+
+        <table aria-label="sizes table">
+          <thead>
+            <tr><th>Size</th><th style="width:22%">Invoice ₹</th><th style="width:14%">Bundles</th><th style="width:14%">pcs/bndl</th><th style="width:18%">Sell ₹/pc</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+
+        <div class="row-actions">
+          <button id="resetBtn" class="btn ghost">Reset</button>
+          <button id="calcBtn" class="btn">Calculate</button>
+        </div>
+
+        <div id="results" class="results"></div>
+      </section>
+
+      <aside class="card fade-up">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="small muted">Summary</div>
+            <div style="font-weight:800;font-size:18px;margin-top:6px">Quick overview</div>
+          </div>
+          <div style="text-align:right"><button id="exportCsv" class="btn ghost">Export CSV</button></div>
+        </div>
+
+        <div class="summary">
+          <div class="stat"><div class="k">Total Pieces</div><div class="v" id="sumPieces">0</div></div>
+          <div class="stat"><div class="k">Total After Tax</div><div class="v" id="sumAfter">₹ 0</div></div>
+          <div class="stat"><div class="k">Total Selling</div><div class="v" id="sumSell">₹ 0</div></div>
+          <div class="stat"><div class="k">Total Profit</div><div class="v" id="sumProfit">₹ 0</div></div>
+          <div class="stat"><div class="k">Overall Margin</div><div class="v" id="sumMargin">0%</div></div>
+        </div>
+      </aside>
+    </div>
+
+    <div style="height:12px"></div>
+    <div class="small muted">Tip: Tap any input to edit. Mobile users get sticky action buttons at the bottom.</div>
+  </div>
+
+  <div class="mobile-footer" style="display:none">
+    <div style="max-width:var(--maxw);margin:0 auto;padding:0 12px;display:flex;gap:8px">
+      <button id="mReset" class="btn ghost">Reset</button>
+      <button id="mCalc" class="btn">Calculate</button>
+    </div>
+  </div>
+
+  <script>
+    // Data & defaults
+    const sizes = [6,8,10,12,16,20,25,32];
+    const defaultPcs = {6:30,8:12,10:8,12:6,16:3,20:2,25:1,32:1};
+    const pre = { 6:{purchase:0,bundles:0,pcsper:30,sell:0},8:{purchase:0,bundles:0,pcsper:12,sell:0},10:{purchase:0,bundles:0,pcsper:8,sell:565},12:{purchase:0,bundles:0,pcsper:6,sell:798},16:{purchase:0,bundles:0,pcsper:3,sell:1420},20:{purchase:0,bundles:0,pcsper:2,sell:0},25:{purchase:0,bundles:0,pcsper:1,sell:0},32:{purchase:0,bundles:0,pcsper:1,sell:0} };
+
+    // helpers
+    const fmt = n => Number(n).toLocaleString('en-IN',{maximumFractionDigits:2,minimumFractionDigits:2});
+
+    // build rows with accessible inputs
+    const tbody = document.getElementById('rows');
+    sizes.forEach(s=>{
+      const r = pre[s] || {purchase:0,bundles:0,pcsper:defaultPcs[s]||1,sell:0};
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:700">${s} mm</td>
+        <td><input aria-label="Invoice amount for ${s}mm" data-field="purchase" data-size="${s}" type="number" step="0.01" value="${r.purchase}" /></td>
+        <td><input aria-label="Bundles for ${s}mm" data-field="bundles" data-size="${s}" type="number" step="1" value="${r.bundles}" /></td>
+        <td><input aria-label="Pieces per bundle for ${s}mm" data-field="pcsper" data-size="${s}" type="number" step="1" value="${r.pcsper}" /></td>
+        <td><input aria-label="Sell price per pc for ${s}mm" data-field="sell" data-size="${s}" type="number" step="0.01" value="${r.sell}" /></td>`;
+      tbody.appendChild(tr);
+    });
+
+    // UI elements
+    const calcBtn = document.getElementById('calcBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const mCalc = document.getElementById('mCalc');
+    const mReset = document.getElementById('mReset');
+    const exportCsv = document.getElementById('exportCsv');
+
+    // mobile footer show/hide
+    function checkMobileFooter(){
+      const mf = document.querySelector('.mobile-footer');
+      if(window.innerWidth <= 880){ mf.style.display = 'block'; } else { mf.style.display = 'none'; }
+    }
+    window.addEventListener('resize', checkMobileFooter); checkMobileFooter();
+
+    function calculate(){
+      const tax = Number(document.getElementById('taxRate').value) || 18;
+      let totalSell=0, totalAfter=0, totalProfit=0, totalPieces=0;
+      const rows = [];
+      sizes.forEach(s=>{
+        const purchase = Number(document.querySelector(`[data-field=purchase][data-size='${s}']`).value) || 0;
+        const bundles = Number(document.querySelector(`[data-field=bundles][data-size='${s}']`).value) || 0;
+        const pcsper = Number(document.querySelector(`[data-field=pcsper][data-size='${s}']`).value) || 1;
+        const sell = Number(document.querySelector(`[data-field=sell][data-size='${s}']`).value) || 0;
+        const pcs = bundles * pcsper;
+        const afterTax = +(purchase * (1 + tax/100));
+        const sellTotal = +(pcs * sell);
+        const profit = +(sellTotal - afterTax);
+        const margin = sellTotal ? (profit / sellTotal * 100) : 0;
+        rows.push({s,purchase,afterTax,pcs,sellTotal,profit,margin});
+        totalSell += sellTotal; totalAfter += afterTax; totalProfit += profit; totalPieces += pcs;
+      });
+      const overallMargin = totalSell ? (totalProfit/totalSell*100) : 0;
+      render(rows,{totalSell,totalAfter,totalProfit,overallMargin,totalPieces});
+    }
+
+    function render(rows,totals){
+      // Results table
+      const el = document.getElementById('results');
+      let html = '<div class="card" style="margin-top:12px;padding:12px">';
+      html += '<table><thead><tr><th>Size</th><th class="right">Invoice</th><th class="right">After Tax</th><th class="right">Pieces</th><th class="right">Sell Total</th><th class="right">Profit</th><th class="right">Margin %</th></tr></thead><tbody>';
+      rows.forEach(r=>{
+        html += `<tr><td style="font-weight:700">${r.s} mm</td><td class="right">₹ ${fmt(r.purchase)}</td><td class="right">₹ ${fmt(r.afterTax)}</td><td class="right">${r.pcs}</td><td class="right">₹ ${fmt(r.sellTotal)}</td><td class="right">₹ ${fmt(r.profit)}</td><td class="right">${r.margin.toFixed(2)}%</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+      el.innerHTML = html;
+
+      // Summary
+      document.getElementById('sumPieces').innerText = totals.totalPieces;
+      document.getElementById('sumAfter').innerText = `₹ ${fmt(totals.totalAfter)}`;
+      document.getElementById('sumSell').innerText = `₹ ${fmt(totals.totalSell)}`;
+      document.getElementById('sumProfit').innerText = `₹ ${fmt(totals.totalProfit)}`;
+      document.getElementById('sumMargin').innerText = `${totals.overallMargin.toFixed(2)}%`;
+    }
+
+    // CSV export
+    function exportCSV(){
+      const tax = Number(document.getElementById('taxRate').value) || 18;
+      const lines = [['size_mm','purchase','after_tax','pieces','sell_total','profit','margin_percent']];
+      sizes.forEach(s=>{
+        const purchase = Number(document.querySelector(`[data-field=purchase][data-size='${s}']`).value) || 0;
+        const bundles = Number(document.querySelector(`[data-field=bundles][data-size='${s}']`).value) || 0;
+        const pcsper = Number(document.querySelector(`[data-field=pcsper][data-size='${s}']`).value) || 1;
+        const sell = Number(document.querySelector(`[data-field=sell][data-size='${s}']`).value) || 0;
+        const pcs = bundles * pcsper;
+        const afterTax = +(purchase * (1 + tax/100));
+        const sellTotal = +(pcs * sell);
+        const profit = +(sellTotal - afterTax);
+        const margin = sellTotal ? (profit/sellTotal*100) : 0;
+        lines.push([s,purchase.toFixed(2),afterTax.toFixed(2),pcs,sellTotal.toFixed(2),profit.toFixed(2),margin.toFixed(2)].join(','));
+      });
+      const blob = new Blob([lines.join('\n')],{type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'tiscon_profit.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // events
+    calcBtn.addEventListener('click', calculate);
+    resetBtn.addEventListener('click', ()=>location.reload());
+    mCalc.addEventListener('click', calculate);
+    mReset.addEventListener('click', ()=>location.reload());
+    exportCsv.addEventListener('click', exportCSV);
+
+    // init: calculate on load to show prefilled results
+    calculate();
+  </script>
+</body>
+</html>
